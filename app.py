@@ -3,6 +3,7 @@ import requests
 import datetime
 import folium
 from streamlit_folium import folium_static
+from geopy.geocoders import Nominatim
 
 # Style customization
 st.markdown(
@@ -22,35 +23,28 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Functions for geocoding and reverse geocoding
+# Initialize geolocator
+geolocator = Nominatim(user_agent="taxifare_app")
+
+# Functions for geocoding and reverse geocoding using geopy
 def geocode(address):
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {'q': address, 'format': 'json'}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        st.error(f"Error: Unable to reach the geocoding service. Status code: {response.status_code}")
-        return None, None
-    data = response.json()
-    if not data:
+    location = geolocator.geocode(address)
+    if location:
+        return location.latitude, location.longitude
+    else:
         st.error("Error: No results found for the given address.")
         return None, None
-    return float(data[0]['lat']), float(data[0]['lon'])
 
 def reverse_geocode(lat, lon):
-    url = "https://nominatim.openstreetmap.org/reverse"
-    params = {'lat': lat, 'lon': lon, 'format': 'json'}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        st.error(f"Error: Unable to reach the reverse geocoding service. Status code: {response.status_code}")
-        return None
-    data = response.json()
-    if not data:
+    location = geolocator.reverse((lat, lon))
+    if location:
+        return location.address
+    else:
         st.error("Error: No results found for the given coordinates.")
         return None
-    return data['display_name']
 
 # Header and logo
-st.image("/home/thomas/code/Thomas-1527/taxifare-website/taxi.png", width=100)  # Assure-toi que 'logo.png' est dans le même répertoire que 'app.py'
+st.image("taxi.png", width=100)  # Assure-toi que 'taxi.png' est dans le même répertoire que 'app.py'
 st.title("TaxiFareModel Front")
 
 st.markdown('''
