@@ -22,6 +22,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Functions for geocoding and reverse geocoding
+def geocode(address):
+    url = "https://nominatim.openstreetmap.org/search"
+    params = {'q': address, 'format': 'json'}
+    response = requests.get(url, params=params).json()
+    return float(response[0]['lat']), float(response[0]['lon'])
+
+def reverse_geocode(lat, lon):
+    url = "https://nominatim.openstreetmap.org/reverse"
+    params = {'lat': lat, 'lon': lon, 'format': 'json'}
+    response = requests.get(url, params=params).json()
+    return response['display_name']
+
 # Header and logo
 st.image("https://path/to/your/logo.png", width=100)
 st.title("TaxiFareModel Front")
@@ -30,24 +43,32 @@ st.markdown('''
 ## Enter the details of your ride:
 ''')
 
-# Date and time input
-pickup_date = st.date_input("Pickup Date", value=datetime.datetime.now().date())
-pickup_time = st.time_input("Pickup Time", value=datetime.datetime.now().time())
-pickup_datetime = datetime.datetime.combine(pickup_date, pickup_time)
+# Address input
+pickup_address = st.text_input("Pickup Address", value="10 Downing St, Westminster, London SW1A 2AA, United Kingdom")
+dropoff_address = st.text_input("Dropoff Address", value="Buckingham Palace, London SW1A 1AA, United Kingdom")
 
-# Coordinate inputs using sliders
-pickup_longitude = st.slider("Pickup Longitude", min_value=-74.05, max_value=-73.75, value=-73.985428)
-pickup_latitude = st.slider("Pickup Latitude", min_value=40.63, max_value=40.85, value=40.748817)
-dropoff_longitude = st.slider("Dropoff Longitude", min_value=-74.05, max_value=-73.75, value=-73.985428)
-dropoff_latitude = st.slider("Dropoff Latitude", min_value=40.63, max_value=40.85, value=40.748817)
-passenger_count = st.number_input("Passenger Count", value=1, min_value=1, max_value=8)
+# Geocode the addresses
+pickup_latitude, pickup_longitude = geocode(pickup_address)
+dropoff_latitude, dropoff_longitude = geocode(dropoff_address)
+
+# Display the coordinates
+st.write(f"Pickup coordinates: ({pickup_latitude}, {pickup_longitude})")
+st.write(f"Dropoff coordinates: ({dropoff_latitude}, {dropoff_longitude})")
 
 # Map
 st.markdown("### Pickup and Dropoff Locations")
-m = folium.Map(location=[40.748817, -73.985428], zoom_start=12)
+m = folium.Map(location=[pickup_latitude, pickup_longitude], zoom_start=12)
 folium.Marker([pickup_latitude, pickup_longitude], tooltip='Pickup').add_to(m)
 folium.Marker([dropoff_latitude, dropoff_longitude], tooltip='Dropoff').add_to(m)
 folium_static(m)
+
+# Date and time input
+pickup_datetime = st.date_input("Pickup Date", value=datetime.datetime.now().date())
+pickup_time = st.time_input("Pickup Time", value=datetime.datetime.now().time())
+pickup_datetime = datetime.datetime.combine(pickup_datetime, pickup_time)
+
+# Passenger count input
+passenger_count = st.number_input("Passenger Count", value=1, min_value=1, max_value=8)
 
 # Call the API
 url = 'https://taxifare.lewagon.ai/predict'
